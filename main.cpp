@@ -8,14 +8,12 @@
 
 #define BufferSize 10
 
-int doughID = 0, meatID = 0, cheeseID = 0, cabbageID = 0;   // insertion indexes
+int pastryID = 0, meatID = 0, cheeseID = 0, cabbageID = 0;   // insertion indexes
 
-pthread_mutex_t doughMutex;
+pthread_mutex_t pastryMutex;
 pthread_mutex_t meatMutex;
 pthread_mutex_t cheeseMutex;
 pthread_mutex_t cabbageMutex;
-
-
 
 class PackageBufferMonitor : Monitor {
 public:
@@ -48,12 +46,12 @@ public:
     }
 };
 
-PackageBufferMonitor doughBuffer;
+PackageBufferMonitor pastryBuffer;
 PackageBufferMonitor meatBuffer;
 PackageBufferMonitor cheeseBuffer;
 PackageBufferMonitor cabbageBuffer;
 
-void produceIngredient(PackageBufferMonitor *buffer, pthread_mutex_t *mutex, int producerID, std::string itemToProduce) {
+void produce(PackageBufferMonitor *buffer, pthread_mutex_t *mutex, int producerID, std::string itemToProduce) {
     while(true) {
         buffer->insert(1);
         printf("\nProducer num %d inserted item %s at index %ld", producerID, itemToProduce.c_str(), buffer->buffer.size());
@@ -62,10 +60,10 @@ void produceIngredient(PackageBufferMonitor *buffer, pthread_mutex_t *mutex, int
     }
 }
 
-void consumeIngredients(PackageBufferMonitor *buffer, int consumerID, std::string product) {
+void consume(PackageBufferMonitor *buffer, int consumerID, std::string product) {
     while(true) {
         buffer->remove();
-        doughBuffer.remove();
+        pastryBuffer.remove();
         printf("\nConsumer num %d: made dumplings with %s", consumerID, product.c_str());
         sleep(1);
         }
@@ -75,16 +73,16 @@ void consumeIngredients(PackageBufferMonitor *buffer, int consumerID, std::strin
 void *producer(void *producerID) {
     switch (*(int*)producerID) {
         case 0:
-            produceIngredient(&doughBuffer, &doughMutex, *(int*)producerID, std::string("🥟"));
+            produce(&pastryBuffer, &pastryMutex, *(int*)producerID, std::string("🥟"));
             break;
         case 1:
-            produceIngredient(&meatBuffer, &meatMutex, *(int*)producerID, std::string("🥩"));
+            produce(&meatBuffer, &meatMutex, *(int*)producerID, std::string("🥩"));
             break;
         case 2:
-            produceIngredient(&cheeseBuffer, &cheeseMutex, *(int*)producerID, std::string("🧀"));
+            produce(&cheeseBuffer, &cheeseMutex, *(int*)producerID, std::string("🧀"));
             break;
         case 3:
-            produceIngredient(&cabbageBuffer, &cabbageMutex, *(int*)producerID, std::string("🥬"));
+            produce(&cabbageBuffer, &cabbageMutex, *(int*)producerID, std::string("🥬"));
             break;
     }
     return 0;
@@ -93,13 +91,13 @@ void *producer(void *producerID) {
 void *consumer(void *consumerID) {
     switch (*(int*)consumerID) {
         case 0:
-            consumeIngredients(&meatBuffer, *(int*)consumerID, std::string("🥩"));
+            consume(&meatBuffer, *(int*)consumerID, std::string("🥩"));
             break;
         case 1:
-            consumeIngredients(&cheeseBuffer, *(int*)consumerID, std::string("🧀"));
+            consume(&cheeseBuffer, *(int*)consumerID, std::string("🧀"));
             break;
         case 2:
-            consumeIngredients(&cabbageBuffer, *(int*)consumerID, std::string("🥬"));
+            consume(&cabbageBuffer, *(int*)consumerID, std::string("🥬"));
             break;
     }
     return 0;
@@ -109,13 +107,13 @@ int main(int argc, char** argv)
 {
     int helper[] = {0, 1, 2, 3};
     // Getting data
-    int doughProd, meatProd, cheeseProd, cabbageProd, meatCons, cheeseCons, cabbageCons;
+    int pastryProd, meatProd, cheeseProd, cabbageProd, meatCons, cheeseCons, cabbageCons;
     if (argc != 8)
     {
 		std::cout << "\nUsage: ./name pastryProd meatProd meatCons cheeseProd cheeseCons cabbageProd cabbageCons";
 		return 1;
 	}
-    doughProd = atoi(argv[1]);
+    pastryProd = atoi(argv[1]);
     meatProd = atoi(argv[2]);
     cheeseProd = atoi(argv[3]);
     cabbageProd = atoi(argv[4]);
@@ -123,7 +121,7 @@ int main(int argc, char** argv)
     cheeseCons = atoi(argv[6]);
     cabbageCons = atoi(argv[7]);
     // got it
-    int prodArray[4] = {doughProd, meatProd, cheeseProd, cabbageProd};
+    int prodArray[4] = {pastryProd, meatProd, cheeseProd, cabbageProd};
     int consArray[3] = {meatCons, cheeseCons, cabbageCons};
 
     int totalProd = 0;
@@ -136,7 +134,7 @@ int main(int argc, char** argv)
 
     // thread init
     pthread_t pro[totalProd], con[totalCons];
-    pthread_mutex_init(&doughMutex, NULL);
+    pthread_mutex_init(&pastryMutex, NULL);
     pthread_mutex_init(&meatMutex, NULL);
     pthread_mutex_init(&cheeseMutex, NULL);
     pthread_mutex_init(&cabbageMutex, NULL);
