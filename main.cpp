@@ -6,7 +6,7 @@
 #include <string>
 #include <queue>
 
-#define N 10
+#define BufferSize 10
 
 int doughID = 0, meatID = 0, cheeseID = 0, cabbageID = 0;   // insertion indexes
 
@@ -25,7 +25,7 @@ public:
 
     void insert(int number) {
         enter();
-        if (buffer.size() == N)
+        if (buffer.size() == BufferSize)
             wait(full);
 
         buffer.push(number);
@@ -41,7 +41,7 @@ public:
             wait(empty);
         number = buffer.front();
         buffer.pop();
-        if (buffer.size() == N - 1)
+        if (buffer.size() == BufferSize - 1)
             signal(full);
         leave();
         return number;
@@ -56,8 +56,8 @@ PackageBufferMonitor cabbageBuffer;
 void produceIngredient(PackageBufferMonitor *buffer, pthread_mutex_t *mutex, int producerID, std::string itemToProduce) {
     while(true) {
         buffer->insert(1);
-        printf("Producer num %d inserted item %s\n", producerID, itemToProduce.c_str());
-        sleep(2);
+        printf("\nProducer num %d inserted item %s at index %ld", producerID, itemToProduce.c_str(), buffer->buffer.size());
+        sleep(1);
         pthread_mutex_unlock(mutex);
     }
 }
@@ -66,8 +66,8 @@ void consumeIngredients(PackageBufferMonitor *buffer, int consumerID, std::strin
     while(true) {
         buffer->remove();
         doughBuffer.remove();
-        printf("Consumer num %d: Made dumplings with %s\n", consumerID, product.c_str());
-        sleep(2);
+        printf("\nConsumer num %d: made dumplings with %s", consumerID, product.c_str());
+        sleep(1);
         }
 }
 
@@ -75,31 +75,31 @@ void consumeIngredients(PackageBufferMonitor *buffer, int consumerID, std::strin
 void *producer(void *producerID) {
     switch (*(int*)producerID) {
         case 0:
-            produceIngredient(&doughBuffer, &doughMutex, *(int*)producerID, std::string("Dough"));
+            produceIngredient(&doughBuffer, &doughMutex, *(int*)producerID, std::string("🥟"));
             break;
         case 1:
-            produceIngredient(&meatBuffer, &meatMutex, *(int*)producerID, std::string("Meat"));
+            produceIngredient(&meatBuffer, &meatMutex, *(int*)producerID, std::string("🥩"));
             break;
         case 2:
-            produceIngredient(&cheeseBuffer, &cheeseMutex, *(int*)producerID, std::string("Cheese"));
+            produceIngredient(&cheeseBuffer, &cheeseMutex, *(int*)producerID, std::string("🧀"));
             break;
         case 3:
-            produceIngredient(&cabbageBuffer, &cabbageMutex, *(int*)producerID, std::string("Cabbage"));
+            produceIngredient(&cabbageBuffer, &cabbageMutex, *(int*)producerID, std::string("🥬"));
             break;
     }
     return 0;
 }
-
+// 🥟 🥩 🧀 🥬
 void *consumer(void *consumerID) {
     switch (*(int*)consumerID) {
         case 0:
-            consumeIngredients(&meatBuffer, *(int*)consumerID, std::string("Meat"));
+            consumeIngredients(&meatBuffer, *(int*)consumerID, std::string("🥩"));
             break;
         case 1:
-            consumeIngredients(&cheeseBuffer, *(int*)consumerID, std::string("Cheese"));
+            consumeIngredients(&cheeseBuffer, *(int*)consumerID, std::string("🧀"));
             break;
         case 2:
-            consumeIngredients(&cabbageBuffer, *(int*)consumerID, std::string("Cabbage"));
+            consumeIngredients(&cabbageBuffer, *(int*)consumerID, std::string("🥬"));
             break;
     }
     return 0;
@@ -107,11 +107,12 @@ void *consumer(void *consumerID) {
 
 int main(int argc, char** argv)
 {
+    int helper[] = {0, 1, 2, 3};
     // Getting data
     int doughProd, meatProd, cheeseProd, cabbageProd, meatCons, cheeseCons, cabbageCons;
     if (argc != 8)
     {
-		std::cout << "\nWrong parameters, correct syntax: ./<filename>.out <doughProd> <meatProd> <cheeseProd> <cabbageProd> <meatCons> <cheeseCons> <cabbageCons>";
+		std::cout << "\nUsage: ./name pastryProd meatProd meatCons cheeseProd cheeseCons cabbageProd cabbageCons";
 		return 1;
 	}
     doughProd = atoi(argv[1]);
@@ -141,14 +142,15 @@ int main(int argc, char** argv)
     pthread_mutex_init(&cabbageMutex, NULL);
 
     for(int i = 0; i < 4; ++i) {
+        int temp = i;
         for (int j = 0; j < prodArray[i]; ++j) {
-            pthread_create(&pro[i], NULL, producer, &j);
+            pthread_create(&pro[i], NULL, producer, &helper[i]);
         }
     }
 
     for(int i = 0; i < 3; ++i) {
         for (int j = 0; j < consArray[i]; ++j) {
-            pthread_create(&con[i], NULL, consumer, &j);
+            pthread_create(&con[i], NULL, consumer, &helper[i]);
         }
     }
 
