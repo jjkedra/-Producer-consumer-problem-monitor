@@ -131,10 +131,7 @@ int main(int argc, char** argv)
 
     // thread init
     pthread_t pro[totalProd], con[totalCons];
-    pthread_mutex_init(&pastryMutex, NULL);
-    pthread_mutex_init(&meatMutex, NULL);
-    pthread_mutex_init(&cheeseMutex, NULL);
-    pthread_mutex_init(&cabbageMutex, NULL);
+
     // without helper reference changes and program breaks
     for(int i = 0; i < 4; ++i) {
         int temp = i;
