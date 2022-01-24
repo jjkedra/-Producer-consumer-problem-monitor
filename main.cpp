@@ -6,20 +6,18 @@
 #include <string>
 #include <queue>
 
+// size of the buffer
 #define BufferSize 10
 
-int pastryID = 0, meatID = 0, cheeseID = 0, cabbageID = 0;   // insertion indexes
+// insertion indexes, basically index of last item + 1
+int pastryID = 0, meatID = 0, cheeseID = 0, cabbageID = 0;
 
-pthread_mutex_t pastryMutex;
-pthread_mutex_t meatMutex;
-pthread_mutex_t cheeseMutex;
-pthread_mutex_t cabbageMutex;
-
-class PackageBufferMonitor : Monitor {
+// implementation of buffer class using  Hoars monitor
+class Buffer : Monitor {
 public:
     Condition empty, full;
     std::queue<unsigned char> buffer;
-    PackageBufferMonitor() = default;
+    Buffer() = default;
 
     void insert(int number) {
         enter();
@@ -46,25 +44,24 @@ public:
     }
 };
 
-PackageBufferMonitor pastryBuffer;
-PackageBufferMonitor meatBuffer;
-PackageBufferMonitor cheeseBuffer;
-PackageBufferMonitor cabbageBuffer;
+Buffer pastryBuffer;
+Buffer meatBuffer;
+Buffer cheeseBuffer;
+Buffer cabbageBuffer;
 
-void produce(PackageBufferMonitor *buffer, pthread_mutex_t *mutex, int producerID, std::string itemToProduce) {
+void produce(Buffer *buffer, int producerID, std::string itemToProduce) {
     while(true) {
         buffer->insert(1);
-        printf("\nProducer num %d inserted item %s at index %ld", producerID, itemToProduce.c_str(), buffer->buffer.size());
+        printf("\nProducer number %d produced item %s at index %ld", producerID, itemToProduce.c_str(), buffer->buffer.size());
         sleep(1);
-        pthread_mutex_unlock(mutex);
     }
 }
 
-void consume(PackageBufferMonitor *buffer, int consumerID, std::string product) {
+void consume(Buffer *buffer, int consumerID, std::string product) {
     while(true) {
         buffer->remove();
         pastryBuffer.remove();
-        printf("\nConsumer num %d: made dumplings with %s", consumerID, product.c_str());
+        printf("\nConsumer num %d baked dumplings with %s", consumerID, product.c_str());
         sleep(1);
         }
 }
@@ -73,16 +70,16 @@ void consume(PackageBufferMonitor *buffer, int consumerID, std::string product) 
 void *producer(void *producerID) {
     switch (*(int*)producerID) {
         case 0:
-            produce(&pastryBuffer, &pastryMutex, *(int*)producerID, std::string("🥟"));
+            produce(&pastryBuffer, *(int*)producerID, std::string("🥟"));
             break;
         case 1:
-            produce(&meatBuffer, &meatMutex, *(int*)producerID, std::string("🥩"));
+            produce(&meatBuffer, *(int*)producerID, std::string("🥩"));
             break;
         case 2:
-            produce(&cheeseBuffer, &cheeseMutex, *(int*)producerID, std::string("🧀"));
+            produce(&cheeseBuffer, *(int*)producerID, std::string("🧀"));
             break;
         case 3:
-            produce(&cabbageBuffer, &cabbageMutex, *(int*)producerID, std::string("🥬"));
+            produce(&cabbageBuffer, *(int*)producerID, std::string("🥬"));
             break;
     }
     return 0;
@@ -106,7 +103,7 @@ void *consumer(void *consumerID) {
 int main(int argc, char** argv)
 {
     int helper[] = {0, 1, 2, 3};
-    // Getting data
+    // Getting data from line
     int pastryProd, meatProd, cheeseProd, cabbageProd, meatCons, cheeseCons, cabbageCons;
     if (argc != 8)
     {
@@ -138,7 +135,7 @@ int main(int argc, char** argv)
     pthread_mutex_init(&meatMutex, NULL);
     pthread_mutex_init(&cheeseMutex, NULL);
     pthread_mutex_init(&cabbageMutex, NULL);
-
+    // without helper reference changes and program breaks
     for(int i = 0; i < 4; ++i) {
         int temp = i;
         for (int j = 0; j < prodArray[i]; ++j) {
